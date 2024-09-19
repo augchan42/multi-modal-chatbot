@@ -1,66 +1,46 @@
 'use client';
 
 import { useChat } from 'ai/react';
-import { useRef, useState } from 'react';
-import Image from 'next/image';
+import { useEffect, useRef } from 'react'
 
 export default function Chat() {
   const { messages, input, handleInputChange, handleSubmit } = useChat();
+  const chatContainerRef = useRef<HTMLDivElement>(null)
 
-  const [files, setFiles] = useState<FileList | undefined>(undefined);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const scrollToBottom = () => {
+    if (chatContainerRef.current) {
+      setTimeout(() => {
+        if (chatContainerRef.current) {
+          chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+        }
+      }, 100);
+    }
+  }
+
+  useEffect(() => {
+    scrollToBottom()
+  }, [messages])
 
   return (
-    <div className="flex flex-col w-full max-w-md py-24 mx-auto stretch">
-      {messages.map(m => (
-        <div key={m.id} className="whitespace-pre-wrap">
-          {m.role === 'user' ? 'User: ' : 'AI: '}
-          {m.content}
-          <div>
-            {m?.experimental_attachments
-              ?.filter(attachment =>
-                attachment?.contentType?.startsWith('image/'),
-              )
-              .map((attachment, index) => (
-                <Image
-                  key={`${m.id}-${index}`}
-                  src={attachment.url}
-                  width={500}
-                  height={500}
-                  alt={attachment.name ?? `attachment-${index}`}
-                />
-              ))}
+    <div className="flex flex-col h-screen">
+      <div 
+        ref={chatContainerRef}
+        className="flex-1 overflow-y-auto p-4"
+      >
+        {messages.map(m => (
+          <div key={m.id} className="whitespace-pre-wrap mb-4">
+            <strong>{m.role === 'user' ? 'User: ' : 'AI: '}</strong>
+            {m.content}
           </div>
-        </div>
-      ))}
+        ))}
+      </div>
 
       <form
-        className="fixed bottom-0 w-full max-w-md p-2 mb-8 border border-gray-300 rounded shadow-xl space-y-2"
-        onSubmit={event => {
-          handleSubmit(event, {
-            experimental_attachments: files,
-          });
-
-          setFiles(undefined);
-
-          if (fileInputRef.current) {
-            fileInputRef.current.value = '';
-          }
-        }}
+        onSubmit={handleSubmit}
+        className="p-4 border-t"
       >
         <input
-          type="file"
-          className=""
-          onChange={event => {
-            if (event.target.files) {
-              setFiles(event.target.files);
-            }
-          }}
-          multiple
-          ref={fileInputRef}
-        />
-        <input
-          className="w-full p-2 text-gray-900 placeholder-gray-500"
+          className="w-full p-2 text-gray-900 border rounded"
           value={input}
           placeholder="Say something..."
           onChange={handleInputChange}
